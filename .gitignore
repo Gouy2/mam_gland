@@ -1,0 +1,10 @@
+/beiyou_excel
+/chaoyang_huigu
+/chaoyang_qianzhan_190
+/luhe_mark_jpg_323
+
+*.pth
+
+log.txt
+
+/__pycache__/
