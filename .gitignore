@@ -1,0 +1,9 @@
+/data
+/image
+/model_save
+
+*.pth
+
+log.txt
+
+/__pycache__/
