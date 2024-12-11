@@ -64,8 +64,8 @@ class Resnet18_cbam(nn.Module):
         # 替换最后的全连接层，用于4分类
         self.base_model.fc = nn.Sequential(
             nn.Dropout(0.3),
-            # nn.Linear(self.base_model.fc.in_features, num_classes)  # 4分类
-            nn.Linear(self.base_model.fc.in_features, 1)  # 二分类
+            nn.Linear(self.base_model.fc.in_features, num_classes)  # 4分类
+            # nn.Linear(self.base_model.fc.in_features, 1)  # 二分类
         )
 
     def forward(self, x):

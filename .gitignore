@@ -11,3 +11,5 @@ log.txt
 /myenv/
 
 *.txt
+
+/cache
