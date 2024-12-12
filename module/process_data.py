@@ -1,5 +1,5 @@
 import os
-from load_img import load_dcm, load_nii
+from mg.module.load_img import load_dcm, load_nii
 import numpy as np
 
 
