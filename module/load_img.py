@@ -104,12 +104,12 @@ def load_nii(nii_path, focus_strength=5):
 
     # np.savetxt('mask.txt', mask)
 
-    output_file = 'tumor_region_info.txt'
+    # output_file = 'tumor_region_info.txt'
 
-    # 将变量格式化为字符串
-    region_info = f"""
-    Side Length: {side_length}
-    """
+    # # 将变量格式化为字符串
+    # region_info = f"""
+    # Side Length: {side_length}
+    # """
 
     # Top: {top}
     # Bottom: {bottom}
@@ -119,9 +119,9 @@ def load_nii(nii_path, focus_strength=5):
     # Width: {width}
 
     # 将信息写入文本文件
-    with open(output_file, 'a') as f:
-        f.write(region_info)
-        f.write('\n')
+    # with open(output_file, 'a') as f:
+    #     f.write(region_info)
+    #     f.write('\n')
 
     # 使用距离变换
     dist_transform = cv2.distanceTransform(1 - mask, cv2.DIST_L2, 5)

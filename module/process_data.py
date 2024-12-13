@@ -42,8 +42,8 @@ def process_images_for_patients(base_path, target_size=(512, 512)):
 
             if dcm_file and nii_file:
                 # 读取并处理 .dcm 和 .nii 图像
-                dcm_image = load_dcm(dcm_file, target_size)
-                nii_mask = load_nii(nii_file, target_size)
+                dcm_image = load_dcm(dcm_file)
+                nii_mask = load_nii(nii_file)
 
                 # 将两个图像相乘
                 focused_dcm_image = dcm_image * nii_mask
