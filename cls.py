@@ -10,3 +10,5 @@ files = glob.glob("./model_save/*.pth")
 for file in files:
     os.remove(file)
     print(f"{file} 已删除")
+
+    
