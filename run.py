@@ -67,7 +67,6 @@ for i, patient_input in enumerate(patient_images):
     # 如果标签为 NaN，则用均值填充
     if pd.isna(label):
         label = 1.0
-
     elif label == 2.0 or label == 3.0 :
         label = 1.0
     
@@ -84,7 +83,7 @@ for i, patient_input in enumerate(patient_images):
 train_transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),  # 随机水平翻转
     # transforms.RandomVerticalFlip(),    # 随机垂直翻转
-    transforms.RandomRotation(20),      # 随机旋转 
+    transforms.RandomRotation(30),      # 随机旋转 
     # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  
     transforms.Normalize(mean=[0.5, 0.5], std=[0.5, 0.5]),  # 归一化到 [-1, 1]
 ])

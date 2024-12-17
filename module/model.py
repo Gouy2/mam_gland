@@ -4,7 +4,7 @@ import torchvision.models as models
 
 # 通道注意力模块
 class ChannelAttention(nn.Module):
-    def __init__(self, in_channels, reduction=16):
+    def __init__(self, in_channels, reduction=8):
         super(ChannelAttention, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
@@ -36,7 +36,7 @@ class SpatialAttention(nn.Module):
 
 # CBAM 模块
 class CBAM(nn.Module):
-    def __init__(self, in_channels, reduction=16, kernel_size=7):
+    def __init__(self, in_channels, reduction=8, kernel_size=7):
         super(CBAM, self).__init__()
         self.channel_attention = ChannelAttention(in_channels, reduction)
         self.spatial_attention = SpatialAttention(kernel_size)
@@ -63,8 +63,8 @@ class Resnet18_cbam(nn.Module):
         
         # 替换最后的全连接层，用于4分类
         self.base_model.fc = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(self.base_model.fc.in_features, num_classes)  # 4分类
+            nn.Dropout(0.4),
+            nn.Linear(self.base_model.fc.in_features, num_classes)  # 四分类
             # nn.Linear(self.base_model.fc.in_features, 1)  # 二分类
         )
 
