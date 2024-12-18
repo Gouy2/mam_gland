@@ -6,7 +6,6 @@ import numpy as np
 from skimage import exposure
 import pandas as pd
 
-# 图像预处理函数
 def load_dcm(dcm_path):
     # 加载 DICOM 图像
     dicom_data = pydicom.dcmread(dcm_path)
