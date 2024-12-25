@@ -1,0 +1,24 @@
+imageType:
+  Original: {}
+
+featureClass:
+  firstorder:
+    features: ['Mean', 'Skewness', 'Kurtosis']
+  glcm:
+    enabled: True
+  gldm:
+    enabled: True
+  glrlm:
+    enabled: True
+  glszm:
+    enabled: True
+  ngtdm:
+    enabled: True
+  shape:
+    enabled: True
+
+setting:
+  binWidth: 25
+  resampledPixelSpacing: null  # 不进行重采样
+  interpolator: sitkBSpline
+  normalize: False
