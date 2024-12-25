@@ -185,3 +185,29 @@ def create_imgWithLabels(patient_images , labels_df):
         labels.append(label)
 
     return images_with_labels
+
+def create_imgWithLabels_2(patient_images, labels_df):
+    # 补全标签并构建 images_with_labels 列表
+    images_with_labels = []
+    labels = []
+    
+    # 确保图像数量是标签数量的两倍
+    assert len(patient_images) == 2 * len(labels_df), "图像数量应该是标签数量的两倍"
+    
+    for i in range(0, len(patient_images), 2):  # 每次迭代处理两张图像
+        label_index = i // 2  # 获取对应的标签索引
+        label = labels_df.iloc[label_index]['N分期']  # 获取标签
+        
+        # 如果标签为 NaN，则用均值填充
+        if pd.isna(label):
+            label = 1.0
+        elif label == 2.0 or label == 3.0:
+            label = 1.0
+        
+        # 将两张连续的图像都与同一个标签配对
+        images_with_labels.append((patient_images[i], label))
+        images_with_labels.append((patient_images[i+1], label))
+        labels.append(label)
+        labels.append(label)
+
+    return images_with_labels

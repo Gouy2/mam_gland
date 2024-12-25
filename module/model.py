@@ -48,12 +48,12 @@ class CBAM(nn.Module):
 
 
 # 自定义带有 CBAM 的 ResNet
-class Resnet18_cbam(nn.Module):
+class Resnet_cbam(nn.Module):
     def __init__(self, num_classes=2):
-        super(Resnet18_cbam, self).__init__()
+        super(Resnet_cbam, self).__init__()
         # 使用预训练的 ResNet18 模型
-        self.base_model = models.resnet18(weights = None)
-        self.base_model.conv1 = nn.Conv2d(2, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.base_model = models.resnet18(pretrained=True)
+        self.base_model.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         
         # 在每个残差块后添加 CBAM 注意力模块
         self.cbam1 = CBAM(64)
