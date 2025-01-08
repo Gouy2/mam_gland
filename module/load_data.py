@@ -133,7 +133,7 @@ def load_nii(nii_path, focus_strength=5):
     
     return mask , top_left, bottom_right
 
-def load_mask(nii_path, focus_strength=5):
+def load_mask(nii_path, focus_strength=5):  # 无距离变换
     # 加载 NIfTI 图像
     nii_data = nib.load(nii_path)
     nii_image = nii_data.get_fdata()
