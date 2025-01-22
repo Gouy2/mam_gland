@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
+
+
 # 通道注意力模块
 class ChannelAttention(nn.Module):
     def __init__(self, in_channels, reduction=8):
@@ -49,14 +51,14 @@ class CBAM(nn.Module):
 
 # 自定义带有 CBAM 的 ResNet
 class Resnet_cbam(nn.Module):
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, input_channels=2):
         super(Resnet_cbam, self).__init__()
         # 使用预训练的 ResNet18 模型
-        self.base_model = models.resnet18(pretrained=True)
-        self.base_model.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.base_model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.base_model.conv1 = nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         
         # 在每个残差块后添加 CBAM 注意力模块
-        self.cbam1 = CBAM(64)
+        self.cbam1 = CBAM(64)   
         self.cbam2 = CBAM(128)
         self.cbam3 = CBAM(256)
         self.cbam4 = CBAM(512)

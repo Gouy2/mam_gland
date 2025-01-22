@@ -5,6 +5,30 @@ import cv2
 import numpy as np
 from skimage import exposure
 import pandas as pd
+import os
+
+def load_img(img_path, format = None):
+
+    if format == 'dcm':
+        dicom_data = pydicom.dcmread(img_path)
+        image = dicom_data.pixel_array.astype(np.float32)
+    elif format == 'jpg':
+        image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        image = image.astype(np.float32)
+
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+        
+    # 归一化
+    image = (image - np.min(image)) / (np.max(image) - np.min(image))  
+
+    # 适应性直方图均衡化
+    image = exposure.equalize_adapthist(image, clip_limit=0.05)
+
+    # 转换尺寸
+    # dcm_image_resized = cv2.resize(dcm_image, target_size)
+
+    return image
 
 def load_dcm(dcm_path):
     # 加载 DICOM 图像
@@ -18,10 +42,9 @@ def load_dcm(dcm_path):
     # 转换尺寸（512x512）
     # dcm_image_resized = cv2.resize(dcm_image, target_size)
 
-
     return dcm_image
 
-def load_jpg(jpg_path, target_size=(512, 512)):
+def load_jpg(jpg_path, target_size=(224, 224)):
     # 加载 DICOM 图像
     jpg_image = cv2.imread(jpg_path, cv2.IMREAD_GRAYSCALE)
     jpg_image = jpg_image.astype(np.float32)
@@ -31,8 +54,8 @@ def load_jpg(jpg_path, target_size=(512, 512)):
     # 转换尺寸（512x512）
     jpg_image_resized = cv2.resize(jpg_image_normalized, target_size)
 
-
     return jpg_image_resized
+
 
 def load_nii(nii_path, focus_strength=5):
     # 加载 NIfTI 图像
@@ -266,22 +289,48 @@ def load_cached_dataset(cache_path, format='npy'):
     else:
         raise ValueError(f"Unsupported format: {format}")
     
-def create_imgWithLabels(patient_images , labels_df):
+def create_imgWithLabels(patient_images , labels_df , is_double = False , is_2cat = True):
 
     # 补全标签并构建 images_with_labels 列表
     images_with_labels = []
     labels = []
-    for i, patient_input in enumerate(patient_images):
-        label = labels_df.iloc[i]['N分期']  # 按顺序获取对应的标签
 
-        # 如果标签为 NaN，则用均值填充
-        if pd.isna(label):
-            label = 1.0
-        elif label == 2.0 or label == 3.0 :
-            label = 1.0
+    if is_double:
+        # 确保图像数量是标签数量的两倍
+        assert len(patient_images) == 2 * len(labels_df), "图像数量应该是标签数量的两倍"
         
-        images_with_labels.append((patient_input, label))
-        labels.append(label)
+        for i in range(0, len(patient_images), 2):  # 每次迭代处理两张图像
+            label_index = i // 2  # 获取对应的标签索引
+            label = labels_df.iloc[label_index]['N分期']  # 获取标签
+            
+            # 如果标签为 NaN，则用均值填充
+            if pd.isna(label):
+                label = 1.0
+
+            if is_2cat:   # 二分类       
+                if label == 2.0 or label == 3.0:
+                    label = 1.0
+            
+            # 将两张连续的图像都与同一个标签配对
+            images_with_labels.append((patient_images[i], label))
+            images_with_labels.append((patient_images[i+1], label))
+            labels.append(label)
+            labels.append(label)
+
+    else:
+        for i, patient_input in enumerate(patient_images):
+            label = labels_df.iloc[i]['N分期']  # 按顺序获取对应的标签
+
+            # 如果标签为 NaN，则用均值填充
+            if pd.isna(label):
+                label = 1.0
+
+            if is_2cat:   # 二分类       
+                if label == 2.0 or label == 3.0:
+                    label = 1.0
+            
+            images_with_labels.append((patient_input, label))
+            labels.append(label)
 
     return images_with_labels
 
@@ -334,3 +383,106 @@ def get_labels(excel_path):
         labels.append(label)
 
     return labels
+
+def process_images_for_patients(base_path, target_size=(224, 224), is_mask=True, is_double=False, count = 0):
+
+    # 获取所有病人文件夹
+    all_folders = sorted([f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f))])
+
+    # 按病人分组文件夹，每两个文件夹为一个病人
+    patient_folders = []
+    for i in range(0, len(all_folders), 2):
+        
+        if i + 1 < len(all_folders):
+            patient_folders.append([all_folders[i], all_folders[i + 1]])
+        
+    # 加载每个文件夹中的图像
+    patient_images = []
+
+    for folder_pair in patient_folders:
+
+        all_images = []
+        for folder in folder_pair:
+            count += 1
+
+            dcm_file = None
+            nii_file = None
+            jpg_file = None
+
+            # 查找对应的 .dcm 和 .nii 文件
+            for file in os.listdir(os.path.join(base_path, folder)):
+                if file.endswith('.dcm'):
+                    dcm_file = os.path.join(base_path, folder, file)
+                elif file.endswith('.nii.gz'):
+                    nii_file = os.path.join(base_path, folder, file)
+                elif file.endswith('.jpg'):
+                    jpg_file = os.path.join(base_path, folder, file)                               
+
+            if dcm_file and nii_file:
+                # 读取并处理 .dcm 和 .nii 图像
+                dcm_image = load_img(dcm_file,'dcm')
+                nii_mask , top_left, bottom_right = load_nii(nii_file)
+                image = dcm_image[top_left[0]:bottom_right[0], top_left[1]:bottom_right[1]]
+
+                if is_mask:
+                    image = image * nii_mask
+
+                image = cv2.resize(image, target_size)
+                            
+                # npimage = np.array(focused_image)
+                # np.savetxt(npimage,f'./txt/{count}.txt')
+                # print(npimage)
+                # np.savetxt(f"./txt/{count}.txt", npimage, fmt="%.1f", delimiter=",")
+
+                # import matplotlib.pyplot as plt
+                # 保存图片
+                # plt.imshow(dcm_image, cmap='gray')
+                # # plt.imshow(focused_image, cmap='gray')
+                # plt.savefig(f"./image/cur{count}.png")
+                
+                all_images.append(image)
+                # patient_images.append(dcm_image)
+
+            elif jpg_file and nii_file:
+                # 读取并处理 .jpg 和 .nii 图像
+                jpg_image = load_img(jpg_file,'jpg')
+                nii_mask , top_left, bottom_right = load_nii(nii_file)
+                image = jpg_image[top_left[0]:bottom_right[0], top_left[1]:bottom_right[1]]
+
+                if is_mask:
+                    image = image * nii_mask
+
+                image = cv2.resize(image, target_size)
+                
+                all_images.append(image)
+                # patient_images.append(jpg_image)
+
+            # 确实nii文件
+            elif dcm_file and not nii_file:
+
+                dcm_image = load_img(dcm_file,'dcm')
+                dcm_image = cv2.resize(dcm_image, target_size)
+                all_images.append(dcm_image)
+                # patient_images.append(dcm_image)
+                print(f"{folder_pair}missing nii file,number:{count}")
+
+            elif jpg_file and not nii_file:
+                
+                jpg_image = load_img(jpg_file,'jpg')
+                jpg_image = cv2.resize(jpg_image, target_size)
+                all_images.append(jpg_image)
+                # patient_images.append(jpg_image)
+                print(f"{folder_pair}missing nii file,number:{count}")
+                
+        if not is_double:
+            if len(all_images) == 2:  # 确保每个病人有 2 张图像
+                # 将两个图像堆叠在一起
+                patient_input = np.stack(all_images, axis=0)  # 形状为 (2, 224, 224)
+                patient_images.append(patient_input)
+            else:
+                print(f"Skipping patient {folder_pair} due to missing images")
+            
+    if not is_double:
+        return patient_images
+
+    return all_images
