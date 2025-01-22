@@ -5,11 +5,11 @@ import os
 import cv2
 import torch
 
-from module.load_data import load_cached_dataset, create_imgWithLabels
-from module.load_data import process_images_for_patients,cache_dataset
-from module.dataset import ImageDataset
-from module.trainer import train, test
-from module.model import *
+from utils.load_data import load_cached_dataset, create_imgWithLabels
+from utils.load_data import process_images_for_patients,cache_dataset
+from utils.dataset import ImageDataset
+from utils.trainer import train, test
+
 
 if __name__ == '__main__':
 
@@ -41,7 +41,6 @@ if __name__ == '__main__':
     images_with_labels = create_imgWithLabels(train_images , train_labels_df , is_double=False, is_2cat=True)
     images_with_labels += create_imgWithLabels(test_images , test_labels_df , is_double=False, is_2cat=True)
 
-    
     #创建数据集
     dataset = ImageDataset(images_with_labels)
     # 抽出20%的数据作为测试集
@@ -62,14 +61,15 @@ if __name__ == '__main__':
     print("-------开始训练-------")
     print("使用设备：", torch.cuda.is_available())
 
-    train(train_dataset,num_classes,input_channels,k_folds,batch_size,num_epochs,lr,weight_decay)
+    train(train_dataset, k_folds, batch_size, num_epochs, lr, weight_decay)
 
     print("-------开始测试-------")
 
     fold = 4
-    epoch = 37
+    epoch = 24
     day = 20250122
-    time = 140513
+    time = 154941
     model_path = f'./results/{day}_{time}/models/best_model_fold_{fold}_epoch_{epoch}.pth'
+
     # test(test_dataset, model_path)
 

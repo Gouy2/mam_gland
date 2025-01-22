@@ -13,7 +13,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from scipy import stats
 
-from module.model import *
+from models.model_factory import ModelFactory
+from config.config import MODEL_CONFIG
 
 
 def train_one_epoch(model, train_loader, criterion, optimizer, device):
@@ -115,9 +116,8 @@ def create_experiment_dirs(base_time):
     return dirs
 
 
-def train(full_dataset,num_classes = 2,input_channels = 2,
-          k_folds = 5,batch_size = 4, num_epochs = 30,
-          lr = 1e-3, weight_decay = 1e-4, model = None):
+def train(full_dataset,k_folds = 5,batch_size = 4, num_epochs = 30,
+          lr = 1e-3, weight_decay = 1e-4):
     
     # 获取当前时间，并格式化为字符串
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -139,10 +139,11 @@ def train(full_dataset,num_classes = 2,input_channels = 2,
     logger.addHandler(console_handler)
 
     logger.info("Start print log")
+    logger.info(f"Model: {MODEL_CONFIG['model_name']} , use_cbam: {MODEL_CONFIG['use_cbam']}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    if input_channels == 2:
+    if MODEL_CONFIG['input_channels'] == 2:
         train_transform = transforms.Compose([
             transforms.RandomHorizontalFlip(),  # 随机水平翻转
             # transforms.RandomVerticalFlip(),    # 随机垂直翻转
@@ -197,7 +198,13 @@ def train(full_dataset,num_classes = 2,input_channels = 2,
         #     break 
         
         # 初始化模型、损失函数和优化器
-        model = Resnet18_cbam(num_classes = num_classes, input_channels=input_channels).to(device)
+        model = model = ModelFactory.get_model(
+            MODEL_CONFIG['model_name'],
+            num_classes=MODEL_CONFIG['num_classes'],
+            input_channels=MODEL_CONFIG['input_channels'],
+            use_cbam=MODEL_CONFIG['use_cbam']
+        ).to(device)
+
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.AdamW(model.parameters(), lr = lr, weight_decay = weight_decay)
         
@@ -306,7 +313,12 @@ def test(test_dataset, model_path, num_classes=2, input_channels=2):
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
 
     # 初始化模型
-    model = Resnet18_cbam(num_classes=num_classes, input_channels=input_channels).to(device)
+    model = ModelFactory.get_model(
+        MODEL_CONFIG['model_name'],
+        num_classes=MODEL_CONFIG['num_classes'],
+        input_channels=MODEL_CONFIG['input_channels'],
+        use_cbam=MODEL_CONFIG['use_cbam']
+    ).to(device)
     
     # 加载预训练模型
     model.load_state_dict(torch.load(model_path,weights_only=True))
