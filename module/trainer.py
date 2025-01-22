@@ -7,9 +7,13 @@ from sklearn.model_selection import KFold
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
-from module.model import Resnet_cbam
 from torchvision import transforms
 from datetime import datetime
+import numpy as np
+from sklearn.metrics import confusion_matrix
+from scipy import stats
+
+from module.model import *
 
 
 def train_one_epoch(model, train_loader, criterion, optimizer, device):
@@ -38,87 +42,105 @@ def train_one_epoch(model, train_loader, criterion, optimizer, device):
 def validate(model, val_loader, criterion, device):
     model.eval()
     val_loss = 0.0
-    correct = 0
-    total = 0
     all_labels = []
     all_probs = []
+    
     with torch.no_grad():
         for inputs, labels in val_loader:
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             val_loss += loss.item()
-            _, predicted = torch.max(outputs, 1)
-            correct += (predicted == labels).sum().item()
-            total += labels.size(0)
             probs = torch.softmax(outputs, dim=1)[:, 1]
             all_labels.extend(labels.cpu().numpy())
             all_probs.extend(probs.cpu().numpy())
     
     val_loss /= len(val_loader)
-    val_acc = correct / total
-    try:
-        auc = roc_auc_score(all_labels, all_probs)
-    except ValueError:
-        auc = 0.5
+    metrics, ci = calculate_metrics(np.array(all_labels), np.array(all_probs))
     
-    return val_loss, val_acc, auc
+    return val_loss, metrics, ci
 
-def save_best_model(model, val_loss, auc, best_val_loss, best_auc, fold, epoch, save_dir='./model_save'):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+def calculate_metrics(y_true, y_pred_prob, confidence=0.95):
+    y_pred = (y_pred_prob > 0.5).astype(int)
     
-    # 保存最好的损失模型
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        torch.save(model.state_dict(), f'{save_dir}/best_loss_{fold + 1}_{epoch + 1}.pth')
+    # 计算基础指标
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
     
-    # 保存最好的AUC模型
-    if auc > best_auc:
-        best_auc = auc
-        torch.save(model.state_dict(), f'{save_dir}/best_auc_{fold + 1}_{epoch + 1}.pth')
+    metrics_raw = {
+        'ACC': (tp + tn) / (tp + tn + fp + fn) ,
+        'SENS': tp / (tp + fn)  if (tp + fn) > 0 else 0,
+        'SPEC': tn / (tn + fp) if (tn + fp) > 0 else 0,
+        'PPV': tp / (tp + fp)  if (tp + fp) > 0 else 0,
+        'NPV': tn / (tn + fn)  if (tn + fn) > 0 else 0,
+        'AUC': roc_auc_score(y_true, y_pred_prob)
+    }
     
-    return best_val_loss, best_auc
+    # 计算置信区间
+    n = len(y_true)
+    z = stats.norm.ppf((1 + confidence) / 2)
+    
+    ci = {}
+    metrics = {}
+    
+    for metric, value in metrics_raw.items():
+        if metric != 'AUC':
+            # 对非AUC指标计算置信区间（使用原始比例）
+            se = np.sqrt((value * (1 - value)) / n)
+            ci_lower = max(0, value - z * se)
+            ci_upper = min(1, value + z * se)
+            
+            # 转换为百分比
+            metrics[metric] = value * 100
+            ci[metric] = [ci_lower * 100, ci_upper * 100]
+        else:
+            # AUC保持原样
+            se = np.sqrt((value * (1 - value)) / n)
+            metrics[metric] = value
+            ci[metric] = [max(0, value - z * se), min(1, value + z * se)]
+    
+    return metrics, ci
+    
+
+def create_experiment_dirs(base_time):
+    base_dir = f'./results/{base_time}'
+    dirs = {
+        'log': os.path.join(base_dir, 'logs'),
+        'model': os.path.join(base_dir, 'models'),
+        'plot': os.path.join(base_dir, 'plots')
+    }
+    
+    for dir_path in dirs.values():
+        os.makedirs(dir_path, exist_ok=True)
+    
+    return dirs
 
 
 def train(full_dataset,num_classes = 2,input_channels = 2,
-          k_folds = 5,batch_size = 4,
-          num_epochs = 30,
-          lr = 1e-3,
-          weight_decay = 1e-4):
+          k_folds = 5,batch_size = 4, num_epochs = 30,
+          lr = 1e-3, weight_decay = 1e-4, model = None):
     
-    # 设置日志
+    # 获取当前时间，并格式化为字符串
+    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    dirs = create_experiment_dirs(current_time)
+
     logger = logging.getLogger(__name__)
-    logger.setLevel(level=logging.INFO)
-
-    # 移除所有已存在的处理器
+    logger.setLevel(logging.INFO)
     logger.handlers.clear()
+    
+    # 创建一个文件处理器，用于写入日志文件
+    file_handler = logging.FileHandler(os.path.join(dirs['log'], 'train.log'))
+    file_handler.setLevel(logging.INFO)
 
-    # 创建文件处理器
-    handler = logging.FileHandler("log.txt")
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
-    handler.setFormatter(formatter)
+    # 创建一个控制台处理器，用于输出到控制台
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
 
-    # 创建控制台处理器
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-
-    # 将处理器添加到日志记录器
-    logger.addHandler(handler)
-    logger.addHandler(console)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
     logger.info("Start print log")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        # 获取当前时间，并格式化为字符串
-    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-
-    # 创建以时间命名的主文件夹
-    base_dir = f'./image/{current_time}'
-    if not os.path.exists(base_dir):
-        os.makedirs(base_dir)
 
     if input_channels == 2:
         train_transform = transforms.Compose([
@@ -175,32 +197,62 @@ def train(full_dataset,num_classes = 2,input_channels = 2,
         #     break 
         
         # 初始化模型、损失函数和优化器
-        model = Resnet_cbam(num_classes = num_classes, input_channels=input_channels).to(device)
+        model = Resnet18_cbam(num_classes = num_classes, input_channels=input_channels).to(device)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.AdamW(model.parameters(), lr = lr, weight_decay = weight_decay)
         
-        best_val_loss = float('inf')
-        best_auc = 0.7
         train_losses = []
         val_losses = []
+
+        best_model_metrics = None
+        best_model_ci = None
+        best_score = 0.6  # 用于判断最优模型
+        best_epoch = 0
+
         for epoch in range(num_epochs):
             # 训练
             train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
             
             # 验证
-            val_loss, val_acc, auc = validate(model, val_loader, criterion, device)
+            val_loss, metrics, ci = validate(model, val_loader, criterion, device)
+
+            current_score = 0.5 * metrics['AUC'] + 0.5 * metrics['ACC']
 
             train_losses.append(train_loss)
             val_losses.append(val_loss)
 
-            # 打印并记录信息
-            logger.info(f'Epoch {epoch + 1}: Train Loss={train_loss:.4f}, Train Acc={train_acc:.4f}, '
-                         f'Val Loss={val_loss:.4f}, Val Acc={val_acc:.4f}, AUC={auc:.4f}')
-            
-            # 保存最佳模型
-            best_val_loss, best_auc = save_best_model(model, val_loss, auc, best_val_loss, best_auc, fold, epoch)
+            if current_score > best_score:
+                best_score = current_score
+                best_model_metrics = metrics
+                best_model_ci = ci
+                best_epoch = epoch
+                torch.save(model.state_dict(), 
+                          os.path.join(dirs['model'], f'best_model_fold_{fold+1}_epoch_{epoch+1}.pth'))
+
+            # 记录每个epoch的指标
+            logger.info(f'Epoch {epoch + 1}: Train Loss={train_loss:.4f}, '
+                       f'Val Loss={val_loss:.4f}, '
+                       f'AUC={metrics["AUC"]:.4f}, '
+                       f'ACC={metrics["ACC"]:.2f}, '                      
+                       f'SENS={metrics["SENS"]:.2f}, '
+                       f'SPEC={metrics["SPEC"]:.2f}, '
+                       f'PPV={metrics["PPV"]:.2f}, '
+                       f'NPV={metrics["NPV"]:.2f}')
+
         
-        logger.info(f'Fold {fold + 1} 完成，最佳 Val Loss: {best_val_loss:.4f}, 最佳 AUC : {best_auc:.4f}\n')
+        # 在每个fold结束时输出最优模型的指标和置信区间
+        logger.info(f'\nFold {fold + 1} Best Model Metrics:')
+        logger.info(f'Best Epoch: {best_epoch + 1}')
+        for metric in ['AUC', 'ACC', 'SENS', 'SPEC', 'PPV', 'NPV']:
+            if best_model_metrics is None:
+                logger.info('Best Model: None')
+            else:
+                if metric == 'AUC':
+                    logger.info(f'{metric}: {best_model_metrics[metric]:.4f} '
+                        f'[{best_model_ci[metric][0]:.4f}, {best_model_ci[metric][1]:.4f}]')
+                else:
+                    logger.info(f'{metric}: {best_model_metrics[metric]:.2f} '
+                        f'[{best_model_ci[metric][0]:.2f}, {best_model_ci[metric][1]:.2f}]')
 
         # 绘制并保存Loss曲线
         plt.figure(figsize=(8, 6))
@@ -211,5 +263,68 @@ def train(full_dataset,num_classes = 2,input_channels = 2,
         plt.title(f'Fold {fold + 1} Loss Curve')
         plt.legend()
         plt.grid(True)
-        plt.savefig(os.path.join(base_dir, f'fold_{fold + 1}_loss.png'))
+        plt.savefig(os.path.join(dirs['plot'], f'fold_{fold + 1}_loss_curve.png'))
         plt.close()
+
+def test(test_dataset, model_path, num_classes=2, input_channels=2):
+    # 获取当前时间，并格式化为字符串
+    # current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # dirs = create_experiment_dirs(current_time)
+
+    # 设置日志
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    
+    file_handler = logging.FileHandler('test.log')
+    file_handler.setLevel(logging.INFO)
+    
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    logger.info("Start test log")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # 设置数据转换
+    if input_channels == 2:
+        test_transform = transforms.Compose([
+            transforms.Normalize(mean=[0.5, 0.5], std=[0.5, 0.5]),
+        ])
+    else:
+        test_transform = transforms.Compose([
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ])
+
+    # 应用转换
+    test_dataset.transform = test_transform
+    
+    # 创建数据加载器
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0)
+
+    # 初始化模型
+    model = Resnet18_cbam(num_classes=num_classes, input_channels=input_channels).to(device)
+    
+    # 加载预训练模型
+    model.load_state_dict(torch.load(model_path,weights_only=True))
+    model.eval()
+
+    criterion = nn.CrossEntropyLoss()
+
+    # 测试
+    test_loss, metrics, ci = validate(model, test_loader, criterion, device)
+
+    # 输出测试结果
+    logger.info('\nTest Results:')
+    logger.info(f'Test Loss: {test_loss:.4f}')
+    for metric in ['AUC', 'ACC', 'SENS', 'SPEC', 'PPV', 'NPV']:
+        if metric == 'AUC':
+            logger.info(f'{metric}: {metrics[metric]:.4f} [{ci[metric][0]:.4f}, {ci[metric][1]:.4f}]')
+        else:
+            logger.info(f'{metric}: {metrics[metric]:.2f} [{ci[metric][0]:.2f}, {ci[metric][1]:.2f}]')
+
+    return metrics, ci
+

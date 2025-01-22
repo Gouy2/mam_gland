@@ -12,5 +12,9 @@ log.txt
 /myenv/
 
 *.txt
+*.log
 
 /cache
+
+/results
+
