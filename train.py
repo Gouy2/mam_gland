@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 import pandas as pd
-import os
 import cv2
 import torch
 
@@ -9,6 +8,11 @@ from utils.load_data import load_cached_dataset, create_imgWithLabels
 from utils.load_data import process_images_for_patients,cache_dataset
 from utils.dataset import ImageDataset
 from utils.trainer import train, test
+
+from config.config import MODEL_CONFIG, PARAM_CONFIG
+
+import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 
 if __name__ == '__main__':
@@ -18,7 +22,6 @@ if __name__ == '__main__':
     # base_path = './data/new_qianzhan' 
     # patient_images = process_images_for_patients(base_path, target_size=(224, 224), is_mask=False, is_double=False)
     
-
     # # # 缓存预处理后图像
     # cache_dataset(patient_images, f'cache/train_{len(patient_images)}_nonfo.npy', format='npy')
 
@@ -49,27 +52,22 @@ if __name__ == '__main__':
     generator = torch.Generator().manual_seed(42)
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size],generator=generator)
 
-    #超参数设置
-    num_classes = 2
-    input_channels = 2
-    k_folds = 5
-    batch_size = 16
-    num_epochs = 50
-    lr = 1e-3
-    weight_decay = 1e-2
+    # config
+    model_name = MODEL_CONFIG['model_name']
+    hyper_params = PARAM_CONFIG[model_name]
 
     print("-------开始训练-------")
     print("使用设备：", torch.cuda.is_available())
 
-    train(train_dataset, k_folds, batch_size, num_epochs, lr, weight_decay)
+    # train(train_dataset, hyper_params=hyper_params)
 
     print("-------开始测试-------")
 
-    fold = 4
-    epoch = 24
+    fold = 5
+    epoch = 38
     day = 20250122
-    time = 154941
+    time = 192953
     model_path = f'./results/{day}_{time}/models/best_model_fold_{fold}_epoch_{epoch}.pth'
 
-    # test(test_dataset, model_path)
+    test(test_dataset, model_path)
 

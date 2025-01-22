@@ -116,9 +116,14 @@ def create_experiment_dirs(base_time):
     return dirs
 
 
-def train(full_dataset,k_folds = 5,batch_size = 4, num_epochs = 30,
-          lr = 1e-3, weight_decay = 1e-4):
+def train(full_dataset, hyper_params):
     
+    k_folds = hyper_params['k_folds']
+    batch_size = hyper_params['batch_size']
+    num_epochs = hyper_params['num_epochs']
+    lr = hyper_params['lr']
+    weight_decay = hyper_params['weight_decay']
+
     # 获取当前时间，并格式化为字符串
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
     dirs = create_experiment_dirs(current_time)
@@ -198,7 +203,7 @@ def train(full_dataset,k_folds = 5,batch_size = 4, num_epochs = 30,
         #     break 
         
         # 初始化模型、损失函数和优化器
-        model = model = ModelFactory.get_model(
+        model = ModelFactory.get_model(
             MODEL_CONFIG['model_name'],
             num_classes=MODEL_CONFIG['num_classes'],
             input_channels=MODEL_CONFIG['input_channels'],

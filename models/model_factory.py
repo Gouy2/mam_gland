@@ -1,4 +1,5 @@
 from models.resnet import *
+from models.vit import *
 
 class ModelFactory:
     def __init__(self):
@@ -9,6 +10,9 @@ class ModelFactory:
             'Resnet18_cbam': Resnet18_cbam,
             'Resnet50_cbam': Resnet50_cbam,
             'Resnet101_cbam': Resnet101_cbam,
+            'vit_b_16': vit_b_16,
+            'DeiT': DeiT,
+            'MobileViT': MobileViT
             
         }
         if model_name not in model_dict:
