@@ -1,21 +1,56 @@
-/data
-/image
-/model_save
+# 数据和缓存目录
+/data/
+/cache/
+/results/
+/image/
+/model_save/
 
+
+# 模型文件
 *.pth
+*.pt
+*.h5
 
+# 日志文件
+*.log
 log.txt
 
-/__pycache__/
-**/__pycache__/
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.mypy_cache/
 
-
+# 虚拟环境
+/venv/
+/env/
 /myenv/
+/.env/
 
+# IDE配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# 其他
+*.csv
+*.xlsx
+*.xls
 *.txt
-*.log
-
-/cache
-
-/results
-
+*.json
