@@ -1,5 +1,6 @@
 from models.resnet import *
 from models.vit import *
+from models.densenet import *
 
 class ModelFactory:
     def __init__(self):
@@ -12,8 +13,8 @@ class ModelFactory:
             'Resnet101_cbam': Resnet101_cbam,
             'vit_b_16': vit_b_16,
             'DeiT': DeiT,
-            'MobileViT': MobileViT
-            
+            'MobileViT': MobileViT,
+            'Densenet121_cbam': Densenet121_cbam
         }
         if model_name not in model_dict:
             raise ValueError(f"Model {model_name} not found")

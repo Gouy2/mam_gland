@@ -150,11 +150,11 @@ def train(full_dataset, hyper_params):
 
     if MODEL_CONFIG['input_channels'] == 2:
         train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),  # 随机水平翻转
-            # transforms.RandomVerticalFlip(),    # 随机垂直翻转
-            transforms.RandomRotation(30),      # 随机旋转 
-            # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  
-            transforms.Normalize(mean=[0.5, 0.5], std=[0.5, 0.5]),  # 归一化到 [-1, 1]
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(15),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.Normalize([0.5, 0.5], [0.5, 0.5])
         ])
 
         # 验证集保持原始数据
@@ -164,11 +164,11 @@ def train(full_dataset, hyper_params):
 
     else:
         train_transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),  # 随机水平翻转
-            # transforms.RandomVerticalFlip(),    # 随机垂直翻转
-            transforms.RandomRotation(30),      # 随机旋转 
-            # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),  
-            transforms.Normalize(mean=[0.5,0.5,0.5], std=[0.5,0.5,0.5]),  # 归一化到 [-1, 1]
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(15),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
 
         # 验证集保持原始数据

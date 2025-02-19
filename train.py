@@ -25,21 +25,7 @@ def cache_images():
 
 
 def load_data():
-    # 加载缓存图像数据
 
-    # cache_path = 'cache/train_225_nonfo.npy'
-    train_images = load_cached_dataset('cache/train_225_nonfo.npy', format='npy')
-    test_images = load_cached_dataset('cache/train_180_nonfo.npy', format='npy')
-    print("---加载图像数据完成---")
-
-    # combined_images = np.concatenate([train_images, test_images], axis=0)
-
-    # 加载标签数据
-    train_excel_path = './data/new_excel/chaoyang_retrospective_233.xlsx'
-    test_excel_path = './data/new_excel/chaoyang_prospective_190.xlsx' 
-    train_labels_df = pd.read_excel(train_excel_path)
-    test_labels_df = pd.read_excel(test_excel_path)
-    print("---加载标签数据完成---")
 
     return train_images, test_images, train_labels_df, test_labels_df
 
@@ -68,7 +54,21 @@ if __name__ == '__main__':
 
     # 主流程
     # 1. 加载数据
-    train_images, test_images, train_labels_df, test_labels_df = load_data()
+    # 加载缓存图像数据
+
+    # cache_path = 'cache/train_225_nonfo.npy'
+    train_images = load_cached_dataset('cache/train_225_nonfo.npy', format='npy')
+    test_images = load_cached_dataset('cache/train_180_nonfo.npy', format='npy')
+    print("---加载图像数据完成---")
+
+    # combined_images = np.concatenate([train_images, test_images], axis=0)
+
+    # 加载标签数据
+    train_excel_path = './data/new_excel/chaoyang_retrospective_233.xlsx'
+    test_excel_path = './data/new_excel/chaoyang_prospective_190.xlsx' 
+    train_labels_df = pd.read_excel(train_excel_path)
+    test_labels_df = pd.read_excel(test_excel_path)
+    print("---加载标签数据完成---")
     
     # 2. 准备数据集
     train_dataset, test_dataset = prepare_dataset(train_images, test_images, train_labels_df, test_labels_df)
@@ -76,12 +76,12 @@ if __name__ == '__main__':
     # 3. 训练模型
     print("-------开始训练-------")
     print("使用设备：", torch.cuda.is_available())
-    # train(train_dataset, hyper_params=hyper_params)
+    train(train_dataset, hyper_params=hyper_params)
 
     # 4. 测试模型
     print("-------开始测试-------")
     fold, epoch = 5, 38
     day, time = 20250122, 192953
     model_path = f'./results/{day}_{time}/models/best_model_fold_{fold}_epoch_{epoch}.pth'
-    test(test_dataset, model_path)
+    # test(test_dataset, model_path)
 
