@@ -3,7 +3,7 @@ MODEL_CONFIG = {
     'model_name': 'Densenet121_cbam',
     'num_classes': 2,
     'input_channels': 2,
-    'use_cbam': False
+    'use_cbam': True
 }
 
 
@@ -72,7 +72,7 @@ PARAM_CONFIG = {
         'k_folds': 5,
         'batch_size': 16,
         'num_epochs': 50,
-        'lr': 1e-3,
+        'lr': 1e-4,
         'weight_decay': 1e-2
     }
 }

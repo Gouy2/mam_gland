@@ -17,7 +17,7 @@ from models.model_factory import ModelFactory
 from config.config import MODEL_CONFIG
 
 
-def train_one_epoch(model, train_loader, criterion, optimizer, device):
+def train_one_epoch(model, train_loader, criterion, optimizer, device, grad_clip=None):
     model.train()
     running_loss = 0.0
     correct = 0
