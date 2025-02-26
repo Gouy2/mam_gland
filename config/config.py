@@ -1,7 +1,7 @@
 MODEL_CONFIG = {
     'model_name': 'Resnet18_cbam',
     # 'model_name': 'Densenet121_cbam',
-    'num_classes': 2,
+    'num_classes': 4,
     'input_channels': 2,
     'k_folds': 5,
     'batch_size': 16,

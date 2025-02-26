@@ -8,6 +8,7 @@ from utils.load_data import load_cached_dataset, create_imgWithLabels
 from utils.load_data import process_images_for_patients,cache_dataset
 from utils.dataset import ImageDataset
 from utils.trainer import train, test
+from utils.trainer_multiclass import train_multiclass, test_multiclass
 
 from config.config import MODEL_CONFIG, PARAM_CONFIG
 
@@ -26,10 +27,9 @@ def cache_images():
 
 def load_data():
 
-
     return train_images, test_images, train_labels_df, test_labels_df
 
-def prepare_dataset(train_images, test_images, train_labels_df, test_labels_df):
+def prepare_dataset(train_images, test_images, train_labels_df, test_labels_df , is_2cat=True):
     # 创建图像标签对
     images_with_labels = create_imgWithLabels(train_images, train_labels_df, is_double=False, is_2cat=True)
     images_with_labels += create_imgWithLabels(test_images, test_labels_df, is_double=False, is_2cat=True)
@@ -71,12 +71,15 @@ if __name__ == '__main__':
     print("---加载标签数据完成---")
     
     # 2. 准备数据集
-    train_dataset, test_dataset = prepare_dataset(train_images, test_images, train_labels_df, test_labels_df)
+    train_dataset, test_dataset = prepare_dataset(train_images, test_images,
+                                                   train_labels_df, test_labels_df,
+                                                   is_2cat=False)
 
     # 3. 训练模型
     print("-------开始训练-------")
     print("使用设备：", torch.cuda.is_available())
-    train(train_dataset, hyper_params=hyper_params)
+    train_multiclass(train_dataset, hyper_params=hyper_params)
+    # train(train_dataset, hyper_params=hyper_params)
 
     # 4. 测试模型
     print("-------开始测试-------")

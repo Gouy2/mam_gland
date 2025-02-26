@@ -123,6 +123,7 @@ def train(full_dataset, hyper_params):
     num_epochs = hyper_params['num_epochs']
     lr = hyper_params['lr']
     weight_decay = hyper_params['weight_decay']
+    num_classes = hyper_params['num_classes']
 
     # 获取当前时间，并格式化为字符串
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -144,7 +145,8 @@ def train(full_dataset, hyper_params):
     logger.addHandler(console_handler)
 
     logger.info("Start print log")
-    logger.info(f"Model: {MODEL_CONFIG['model_name']} , use_cbam: {MODEL_CONFIG['use_cbam']} , learning_rate: {lr} , weight_decay: {weight_decay}")
+    logger.info(f"Model: {MODEL_CONFIG['model_name']} , use_cbam: {MODEL_CONFIG['use_cbam']} , "
+                f"learning_rate: {lr} , weight_decay: {weight_decay} , num_class:{num_classes} ")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
