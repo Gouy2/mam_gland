@@ -144,7 +144,7 @@ def train(full_dataset, hyper_params):
     logger.addHandler(console_handler)
 
     logger.info("Start print log")
-    logger.info(f"Model: {MODEL_CONFIG['model_name']} , use_cbam: {MODEL_CONFIG['use_cbam']}")
+    logger.info(f"Model: {MODEL_CONFIG['model_name']} , use_cbam: {MODEL_CONFIG['use_cbam']} , learning_rate: {lr} , weight_decay: {weight_decay}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
