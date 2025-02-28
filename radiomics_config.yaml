@@ -1,24 +1,46 @@
 imageType:
-  Original: {}
+  Original: {}  # 只使用原始图像，不使用滤波
+  Wavelet: {}  # 添加小波变换特征
+  LoG:         # 添加高斯拉普拉斯滤波特征
+    sigma: [1.0, 3.0]
 
 featureClass:
   firstorder:
-    features: ['Mean', 'Skewness', 'Kurtosis']
+    - Mean
+    - Median 
+    - Energy
+    - Entropy
+    - TotalEnergy    # 添加更多一阶特征
+    - Skewness
+    - Kurtosis
+    - Variance
+    - RootMeanSquared
   glcm:
-    enabled: True
+    - Contrast
+    - Correlation
+    - JointEntropy
+    - Homogeneity1   # 添加纹理特征
+    - ClusterShade
+    - ClusterProminence
   gldm:
-    enabled: True
+    - GrayLevelNonUniformity
+    - DependenceEntropy
+    - DependenceNonUniformity
   glrlm:
-    enabled: True
-  glszm:
-    enabled: True
-  ngtdm:
-    enabled: True
-  shape:
-    enabled: True
+    - GrayLevelNonUniformity
+    - RunLengthNonUniformity
+    - LongRunHighGrayLevelEmphasis
+  shape2D:  # 使用2D形状特征代替3D
+    - Perimeter
+    - Area
+    - MajorAxisLength  # 添加更多形态特征
+    - MinorAxisLength
+    - Eccentricity
 
 setting:
   binWidth: 25
-  resampledPixelSpacing: null  # 不进行重采样
-  interpolator: sitkBSpline
+  interpolator: 'sitkBSpline'
+  resampledPixelSpacing: null
   normalize: False
+  force2D: True  # 确保使用2D计算
+  voxelArrayShift: 400  # 处理负值
